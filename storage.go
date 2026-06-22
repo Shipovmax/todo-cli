@@ -29,7 +29,7 @@ func Load(filename string) ([]Todo, error) {
 }
 
 func Save(filename string, todos []Todo) error {
-	tempFile := filename + ".tmp" // Атомарная запись
+	tempFile := filename + ".tmp"
 	data, err := json.Marshal(todos)
 	if err != nil {
 		return err
@@ -37,8 +37,5 @@ func Save(filename string, todos []Todo) error {
 	if err := os.WriteFile(tempFile, data, 0644); err != nil {
 		return err
 	}
-	if err := os.Rename(tempFile, filename); err != nil {
-		return err
-	}
-	return nil
+	return os.Rename(tempFile, filename)
 }

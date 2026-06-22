@@ -7,7 +7,11 @@ import (
 )
 
 func main() {
-	todos, _ := Load("todos.json")
+	todos, err := Load("todos.json")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ошибка чтения файла: %s\n", err)
+		os.Exit(1)
+	}
 
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "ошибка: укажите команду: add, list, done, delete\n")
@@ -32,7 +36,7 @@ func main() {
 			if todo.Done {
 				status = "[x]"
 			}
-			fmt.Printf("%s %d %s\n", status, todo.ID, todo.Title)
+			fmt.Printf("%s  %-5d %s\n", status, todo.ID, todo.Title)
 		}
 	case "done":
 		if len(os.Args) < 3 {
@@ -41,10 +45,10 @@ func main() {
 		}
 		id, err := strconv.Atoi(os.Args[2])
 		if err != nil {
-			fmt.Fprint(os.Stderr, "ошибка: ID Должен быть числом\n")
+			fmt.Fprint(os.Stderr, "ошибка: ID должен быть числом\n")
 			os.Exit(1)
 		}
-		todos, err = Complete(todos, id)
+		todos, completed, err := Complete(todos, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ошибка: %s\n", err)
 			os.Exit(1)
@@ -53,7 +57,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "ошибка сохранения: %s\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Выполнено: [%d]\n", id)
+		fmt.Printf("Выполнено: [%d] %s\n", completed.ID, completed.Title)
 	case "delete":
 		if len(os.Args) < 3 {
 			fmt.Fprintf(os.Stderr, "ошибка: укажите правильный номер задачи\n")
@@ -61,10 +65,10 @@ func main() {
 		}
 		id, err := strconv.Atoi(os.Args[2])
 		if err != nil {
-			fmt.Fprint(os.Stderr, "ошибка: ID Должен быть числом\n")
+			fmt.Fprint(os.Stderr, "ошибка: ID должен быть числом\n")
 			os.Exit(1)
 		}
-		todos, err = Delete(todos, id)
+		todos, deleted, err := Delete(todos, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ошибка: %s\n", err)
 			os.Exit(1)
@@ -73,7 +77,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "ошибка сохранения: %s\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Удалено: [%d]\n", id)
+		fmt.Printf("Удалено: [%d] %s\n", deleted.ID, deleted.Title)
 	default:
 		fmt.Fprintf(os.Stderr, "ошибка: неизвестная команда %s\n", os.Args[1])
 		os.Exit(1)

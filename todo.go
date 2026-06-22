@@ -25,23 +25,22 @@ func Add(todos []Todo, title string) ([]Todo, Todo) {
 	return append(todos, newTodo), newTodo
 }
 
-
-func Complete(todos []Todo, id int) ([]Todo, error){
-	for i, todo := range todos{
-		if todo.ID == id{
+func Complete(todos []Todo, id int) ([]Todo, Todo, error) {
+	for i, todo := range todos {
+		if todo.ID == id {
 			todos[i].Done = true
-			return todos, nil
+			return todos, todos[i], nil
 		}
 	}
-	return nil, errors.New("Задача не найдена")
+	return nil, Todo{}, errors.New("задача не найдена")
 }
 
-func Delete(todos []Todo, id int) ([]Todo, error){
-	for i, todo := range todos{
-		if todo.ID == id{
+func Delete(todos []Todo, id int) ([]Todo, Todo, error) {
+	for i, todo := range todos {
+		if todo.ID == id {
 			todos = append(todos[:i], todos[i+1:]...)
-			return todos, nil
+			return todos, todo, nil
 		}
 	}
-	return nil, errors.New("Задача не найдена")
+	return nil, Todo{}, errors.New("задача не найдена")
 }
