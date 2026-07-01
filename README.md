@@ -1,154 +1,167 @@
-# todo-cli — TODO-менеджер с персистентностью
+# todo-cli — A Persistent TODO Manager
 
-> CLI-приложение для управления задачами с хранением в JSON-файле. Учебный проект #3 в рамках подготовки к позиции Go Backend Developer.
+> A CLI application for task management with JSON file storage. Learning Project #3 as part of preparation for a Go Backend Developer role.
 
 ---
 
-## Для рекрутера
+## For the Recruiter
 
-### Что это и зачем
+### What it is and Why
 
-Третий проект в roadmap — переход от stateless-вычислений к stateful-приложению. Задачи сохраняются между запусками через JSON-файл: это минимальная модель того, как работает любой backend с персистентным хранилищем, только вместо PostgreSQL — файловая система.
+The third project in the roadmap marks the transition from stateless computations to a stateful application. Tasks are persisted across restarts using a JSON file: this represents a minimal model of how any backend with persistent storage operates, using the file system instead of PostgreSQL.
 
-Главная цель — освоить работу с файловым I/O в Go, сериализацию структур через `encoding/json`, операции над слайсами (добавление, фильтрация, поиск по ID), и правильное управление состоянием через единый файл данных. Всё это прямые аналоги операций с базой данных: read → modify → write.
+The primary goal is to master file I/O in Go, struct serialization using `encoding/json`, slice operations (appending, filtering, searching by ID), and proper state management via a single data file. All of these are direct analogs of database operations: read → modify → write.
 
-Проект демонстрирует понимание разделения слоёв: CLI-парсинг аргументов отделён от бизнес-логики, которая отделена от слоя хранения. Именно эта трёхслойная структура масштабируется в реальные сервисы.
+The project demonstrates a solid understanding of layer separation: CLI argument parsing is decoupled from business logic, which is further separated from the storage layer. This exact three-tier architecture is what scales into real-world production services.
 
-### Что демонстрирует этот проект
+### What This Project Demonstrates
 
-| Навык | Реализация |
+| Skill | Implementation |
 |---|---|
-| Файловый I/O | `os.ReadFile`, `os.WriteFile`, создание файла если не существует |
-| JSON сериализация | `encoding/json`, struct tags, `json.Marshal` / `json.Unmarshal` |
-| Работа со структурами | `Todo` struct с полями ID, Title, Done, CreatedAt |
-| Операции над слайсами | добавление, фильтрация по условию, поиск по ID |
-| CLI с подкомандами | `os.Args` с разбором subcommand: add / list / done / delete |
-| Разделение слоёв | `storage.go` (I/O) + `todo.go` (бизнес-логика) + `main.go` (CLI) |
-| Форматированный вывод | `fmt.Printf` с выравниванием для таблицы задач |
+| File I/O | `os.ReadFile`, `os.WriteFile`, creating the file if it does not exist |
+| JSON Serialization | `encoding/json`, struct tags, `json.Marshal` / `json.Unmarshal` |
+| Working with Structs | `Todo` struct with fields: `ID`, `Title`, `Done`, `CreatedAt` |
+| Slice Operations | appending, filtering by condition, searching by ID |
+| CLI with Subcommands | `os.Args` parsing for subcommands: `add` / `list` / `done` / `delete` |
+| Layer Separation | `storage.go` (I/O) + `todo.go` (business logic) + `main.go` (CLI) |
+| Formatted Output | `fmt.Printf` with padding/alignment for the task table |
 
-### Стек
+### Stack
 
-- **Язык:** Go 1.22+
-- **Зависимости:** только стандартная библиотека
-- **Хранилище:** `todos.json` в рабочей директории
-- **Платформа:** Linux / macOS / Windows
+- **Language:** Go 1.22+
+- **Dependencies:** Standard library only
+- **Storage:** `todos.json` in the working directory
+- **Platform:** Linux / macOS / Windows
 
 ---
 
-## Для разработчика
+## For the Developer
 
-### Архитектурные решения
+### Architectural Decisions
 
-#### Почему JSON-файл, а не SQLite или in-memory?
+#### Why a JSON file instead of SQLite or in-memory?
 
-JSON-файл — это минимальная персистентность без зависимостей. Цель проекта — понять паттерн read → modify → write, который одинаков что для файла, что для БД. SQLite добавил бы драйвер и SQL — отвлечение от главного. In-memory не сохраняет данные между запусками — обучающая ценность теряется.
+A JSON file provides minimal persistence with zero external dependencies. The goal of this project is to understand the read → modify → write pattern, which is identical for both files and databases. SQLite would introduce a database driver and SQL, distracting from the core objective. An in-memory store wouldn't persist data between runs, which defeats the educational value.
 
-#### Почему `os.ReadFile` / `os.WriteFile`, а не `os.Open` + буферизованное чтение?
+#### Why `os.ReadFile` / `os.WriteFile` instead of `os.Open` + buffered reading?
 
-Для файла размером в несколько килобайт (список задач) буферизация не нужна. `ReadFile` и `WriteFile` — идиоматичный Go для работы с небольшими файлами целиком. `bufio` пригодится в проекте #3 при построчном чтении больших файлов.
+For a file that is only a few kilobytes in size (a task list), buffering is unnecessary. `ReadFile` and `WriteFile` are idiomatic Go for handling small files in their entirety. `bufio` will come in handy in subsequent projects when reading large files line-by-line.
 
-#### Почему subcommands через `os.Args`, а не флаги через `flag`?
+#### Why subcommands via `os.Args` instead of flags via `flag`?
 
-`add`, `list`, `done`, `delete` — это команды, а не флаги. Семантически они ближе к субкомандам (`git commit`, `docker run`), чем к флагам (`-v`, `--output`). `os.Args[1]` как subcommand — правильная модель для CLI-инструментов.
+`add`, `list`, `done`, and `delete` are commands, not flags. Semantically, they are closer to subcommands (like `git commit`, `docker run`) rather than flags (like `-v`, `--output`). Utilizing `os.Args[1]` as a subcommand is the correct model for CLI tools.
 
-#### Почему ID генерируется как `max(existing IDs) + 1`, а не `len(todos) + 1`?
+#### Why is the ID generated as `max(existing IDs) + 1` instead of `len(todos) + 1`?
 
-После удаления задачи `len` даёт коллизии. Например: добавили 3 задачи, удалили вторую, добавили новую — `len` даст ID=3, который уже был. `max+1` гарантирует уникальность.
+Using `len` causes collisions after a task is deleted. For example: if you add 3 tasks, delete the second one, and then add a new one, `len` will yield ID=3, which already exists. Using `max+1` guarantees uniqueness.
 
-#### Почему атомарная запись: сначала в temp-файл, потом rename?
+#### Why atomic write: first to a temp file, then rename?
 
 ```go
-// Небезопасно: если процесс упадёт во время записи — файл повреждён
+// Unsafe: if the process crashes during writing, the file gets corrupted
 os.WriteFile("todos.json", data, 0644)
 
-// Безопасно: rename атомарна на уровне ОС
+// Safe: rename is atomic at the OS level
 os.WriteFile("todos.json.tmp", data, 0644)
 os.Rename("todos.json.tmp", "todos.json")
+
 ```
 
-`os.Rename` на одной файловой системе — атомарная операция. Либо старый файл, либо новый. Никакого промежуточного повреждённого состояния.
+An `os.Rename` operation on the same file system is atomic. You either get the old file or the new one, completely eliminating any intermediate corrupted state.
 
-### Структура
+### Structure
 
 ```
 todo-cli/
-├── main.go       # CLI: парсинг os.Args, вызов команд, вывод результата
-├── todo.go       # бизнес-логика: Add, List, Complete, Delete, nextID
-├── storage.go    # I/O слой: Load (read+unmarshal), Save (marshal+write)
+├── main.go       # CLI: parsing os.Args, invoking commands, printing results
+├── todo.go       # Business logic: Add, List, Complete, Delete, nextID
+├── storage.go    # I/O layer: Load (read+unmarshal), Save (marshal+write)
 ├── go.mod
 └── README.md
+
 ```
 
-### Установка и запуск
+### Installation and Setup
 
 ```bash
-git clone https://github.com/Shipovmax/todo-cli
+git clone [https://github.com/Shipovmax/todo-cli](https://github.com/Shipovmax/todo-cli)
 cd todo-cli
 go build -o todo .
+
 ```
 
-### Использование
+### Usage
 
 ```bash
-./todo add <текст задачи>     # добавить задачу
-./todo list                   # показать все задачи
-./todo done <id>              # отметить задачу выполненной
-./todo delete <id>            # удалить задачу
+./todo add <task text>     # add a task
+./todo list                   # list all tasks
+./todo done <id>              # mark a task as completed
+./todo delete <id>            # delete a task
+
 ```
 
-### Примеры
+### Examples
 
 ```bash
-./todo add "Изучить encoding/json"
-# Добавлено: [1] Изучить encoding/json
+./todo add "Learn encoding/json"
+# Added: [1] Learn encoding/json
 
-./todo add "Написать storage.go"
-# Добавлено: [2] Написать storage.go
+./todo add "Write storage.go"
+# Added: [2] Write storage.go
 
 ./todo list
-# ID  Статус  Задача
-# 1   [ ]     Изучить encoding/json
-# 2   [ ]     Написать storage.go
+# ID  Status  Task
+# 1   [ ]     Learn encoding/json
+# 2   [ ]     Write storage.go
 
 ./todo done 1
-# Выполнено: [1] Изучить encoding/json
+# Completed: [1] Learn encoding/json
 
 ./todo list
-# ID  Статус  Задача
-# 1   [x]     Изучить encoding/json
-# 2   [ ]     Написать storage.go
+# ID  Status  Task
+# 1   [x]     Learn encoding/json
+# 2   [ ]     Write storage.go
 
 ./todo delete 2
-# Удалено: [2] Написать storage.go
+# Deleted: [2] Write storage.go
+
 ```
 
-### Обработка ошибок
+### Error Handling
 
 ```bash
 ./todo done 99
-# stderr: ошибка: задача с ID 99 не найдена
+# stderr: error: task with ID 99 not found
 # exit code: 1
 
 ./todo delete 99
-# stderr: ошибка: задача с ID 99 не найдена
+# stderr: error: task with ID 99 not found
 # exit code: 1
 
 ./todo
-# stderr: ошибка: укажите команду: add / list / done / delete
+# stderr: error: please specify a command: add / list / done / delete
 # exit code: 1
 
 ./todo add
-# stderr: ошибка: команда add требует текст задачи
+# stderr: error: the add command requires task text
 # exit code: 1
 
 ./todo done abc
-# stderr: ошибка: ID должен быть числом
+# stderr: error: ID must be a number
 # exit code: 1
+
 ```
 
-### Запуск без сборки
+### Running Without Building
 
 ```bash
-go run . add "Первая задача"
+go run . add "First task"
 go run . list
+
+```
+
+
+
+Жду следующий файл!
+
 ```
