@@ -84,7 +84,7 @@ todo-cli/
 ### Installation and Setup
 
 ```bash
-git clone [https://github.com/Shipovmax/todo-cli](https://github.com/Shipovmax/todo-cli)
+git clone https://github.com/Shipovmax/todo-cli
 cd todo-cli
 go build -o todo .
 
@@ -157,11 +157,5 @@ go build -o todo .
 ```bash
 go run . add "First task"
 go run . list
-
-```
-
-
-
-Жду следующий файл!
 
 ```

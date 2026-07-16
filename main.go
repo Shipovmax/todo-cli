@@ -1,3 +1,5 @@
+// Command todo is a CLI task manager backed by a JSON file (todos.json) in
+// the working directory. Supported subcommands: add, list, done, delete.
 package main
 
 import (
@@ -6,30 +8,32 @@ import (
 	"strconv"
 )
 
+const storageFile = "todos.json"
+
 func main() {
-	todos, err := Load("todos.json")
+	todos, err := Load(storageFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ошибка чтения файла: %s\n", err)
+		fmt.Fprintf(os.Stderr, "error reading file: %s\n", err)
 		os.Exit(1)
 	}
 
 	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "ошибка: укажите команду: add, list, done, delete\n")
+		fmt.Fprintf(os.Stderr, "error: please specify a command: add, list, done, delete\n")
 		os.Exit(1)
 	}
 
 	switch os.Args[1] {
 	case "add":
 		if len(os.Args) < 3 {
-			fmt.Fprintf(os.Stderr, "ошибка: укажите текст задачи\n")
+			fmt.Fprintf(os.Stderr, "error: the add command requires task text\n")
 			os.Exit(1)
 		}
 		todos, newTodo := Add(todos, os.Args[2])
-		if err := Save("todos.json", todos); err != nil {
-			fmt.Fprintf(os.Stderr, "ошибка сохранения: %s\n", err)
+		if err := Save(storageFile, todos); err != nil {
+			fmt.Fprintf(os.Stderr, "error saving: %s\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Добавлено: [%d] %s\n", newTodo.ID, newTodo.Title)
+		fmt.Printf("Added: [%d] %s\n", newTodo.ID, newTodo.Title)
 	case "list":
 		for _, todo := range todos {
 			status := "[ ]"
@@ -40,46 +44,46 @@ func main() {
 		}
 	case "done":
 		if len(os.Args) < 3 {
-			fmt.Fprintf(os.Stderr, "ошибка: укажите правильный номер задачи\n")
+			fmt.Fprintf(os.Stderr, "error: please specify a valid task ID\n")
 			os.Exit(1)
 		}
 		id, err := strconv.Atoi(os.Args[2])
 		if err != nil {
-			fmt.Fprint(os.Stderr, "ошибка: ID должен быть числом\n")
+			fmt.Fprint(os.Stderr, "error: ID must be a number\n")
 			os.Exit(1)
 		}
 		todos, completed, err := Complete(todos, id)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "ошибка: %s\n", err)
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
 			os.Exit(1)
 		}
-		if err := Save("todos.json", todos); err != nil {
-			fmt.Fprintf(os.Stderr, "ошибка сохранения: %s\n", err)
+		if err := Save(storageFile, todos); err != nil {
+			fmt.Fprintf(os.Stderr, "error saving: %s\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Выполнено: [%d] %s\n", completed.ID, completed.Title)
+		fmt.Printf("Completed: [%d] %s\n", completed.ID, completed.Title)
 	case "delete":
 		if len(os.Args) < 3 {
-			fmt.Fprintf(os.Stderr, "ошибка: укажите правильный номер задачи\n")
+			fmt.Fprintf(os.Stderr, "error: please specify a valid task ID\n")
 			os.Exit(1)
 		}
 		id, err := strconv.Atoi(os.Args[2])
 		if err != nil {
-			fmt.Fprint(os.Stderr, "ошибка: ID должен быть числом\n")
+			fmt.Fprint(os.Stderr, "error: ID must be a number\n")
 			os.Exit(1)
 		}
 		todos, deleted, err := Delete(todos, id)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "ошибка: %s\n", err)
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
 			os.Exit(1)
 		}
-		if err := Save("todos.json", todos); err != nil {
-			fmt.Fprintf(os.Stderr, "ошибка сохранения: %s\n", err)
+		if err := Save(storageFile, todos); err != nil {
+			fmt.Fprintf(os.Stderr, "error saving: %s\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Удалено: [%d] %s\n", deleted.ID, deleted.Title)
+		fmt.Printf("Deleted: [%d] %s\n", deleted.ID, deleted.Title)
 	default:
-		fmt.Fprintf(os.Stderr, "ошибка: неизвестная команда %s\n", os.Args[1])
+		fmt.Fprintf(os.Stderr, "error: unknown command %s\n", os.Args[1])
 		os.Exit(1)
 	}
 }
